@@ -120,7 +120,7 @@ kubectl rollout restart deployment -n bookinfo
 
 ---
 
-## Step 5: Manual Injection (compare against automatic)
+## Step 5: Manual Injection (compare against automatic optional step )
 
 Create a plain namespace with no label, and inject a pod manually instead:
 
@@ -189,11 +189,8 @@ This confirms the sidecar has real routing/cluster config pushed down from istio
 
 ## Step 9: Confirm mTLS Is Active Between Sidecars
 
-```bash
-istioctl authn tls-check <productpage-pod-name>.bookinfo
-```
 
-Or, more directly, check for the mutual TLS handshake in the proxy config:
+check for the mutual TLS handshake in the proxy config:
 
 ```bash
 istioctl proxy-config secret <productpage-pod-name> -n bookinfo
