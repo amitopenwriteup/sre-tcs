@@ -16,6 +16,41 @@ export PATH=$PWD/bin:$PATH
 istioctl version --remote=false
 ```
 
+### Troubleshooting: `cd: istio-*.tar.gz: Not a directory`
+
+If you hit this error, the script downloaded the tarball but didn't extract it, so `istio-*` matched the `.tar.gz` file itself rather than a folder.
+
+**1. Check what you have:**
+
+```bash
+ls -la istio-*.tar.gz
+```
+
+**2. Confirm the file isn't a truncated/corrupted download:**
+
+```bash
+file istio-*.tar.gz
+```
+
+- Expected: `gzip compressed data`
+- If instead you see `ASCII text` or `HTML document`, the download failed and grabbed an error page instead of the real archive.
+
+**3. Extract manually (or re-download first if corrupted):**
+
+```bash
+# If corrupted, re-download directly first:
+curl -LO https://github.com/istio/istio/releases/download/1.30.3/istio-1.30.3-linux-amd64.tar.gz
+
+tar -xzf istio-1.30.3-linux-amd64.tar.gz
+cd istio-1.30.3
+export PATH=$PWD/bin:$PATH
+istioctl version --remote=false
+```
+
+Once this prints a client version, continue to Step 2.
+
+---
+
 ## Step 2: Install Istio (demo profile)
 
 ```bash
@@ -31,6 +66,8 @@ istioctl verify-install
 
 You should see `istiod`, `istio-ingressgateway`, and `istio-egressgateway` pods `Running`.
 
+---
+
 ## Step 3: Enable Automatic Sidecar Injection
 
 ```bash
@@ -39,6 +76,8 @@ kubectl label namespace bookinfo istio-injection=enabled
 
 kubectl get namespace bookinfo --show-labels
 ```
+
+---
 
 ## Step 4: Deploy the Bookinfo Sample App
 
@@ -66,6 +105,8 @@ If a pod shows `1/1`, it was created *before* the namespace label was applied �
 kubectl rollout restart deployment -n bookinfo
 ```
 
+---
+
 ## Step 5: Manual Injection (compare against automatic)
 
 Create a plain namespace with no label, and inject a pod manually instead:
@@ -87,6 +128,8 @@ istioctl kube-inject -f https://raw.githubusercontent.com/istio/istio/release-1.
 
 Look for the `istio-init` init container and the `istio-proxy` container — this is the diff injection makes.
 
+---
+
 ## Step 6: Opt a Single Pod Out of Injection
 
 Add the annotation to any deployment spec's pod template:
@@ -99,6 +142,8 @@ metadata:
 
 Apply it and confirm that pod stays at `1/1` while its neighbors stay at `2/2`.
 
+---
+
 ## Step 7: Verify Sidecar Sync with the Control Plane
 
 ```bash
@@ -110,6 +155,8 @@ Every sidecar should show `SYNCED` for CDS, LDS, EDS, RDS. If a proxy shows `STA
 ```bash
 kubectl logs -n istio-system deploy/istiod
 ```
+
+---
 
 ## Step 8: Inspect What Envoy Actually Received
 
@@ -125,6 +172,8 @@ istioctl proxy-config endpoint <productpage-pod-name> -n bookinfo
 
 This confirms the sidecar has real routing/cluster config pushed down from istiod via xDS — not just a bare proxy.
 
+---
+
 ## Step 9: Confirm mTLS Is Active Between Sidecars
 
 ```bash
@@ -138,6 +187,8 @@ istioctl proxy-config secret <productpage-pod-name> -n bookinfo
 ```
 
 You should see certificates issued for the workload's service account identity.
+
+---
 
 ## Step 10: Access the App
 
