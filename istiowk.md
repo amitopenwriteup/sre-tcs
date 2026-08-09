@@ -61,7 +61,20 @@ Verify:
 
 ```bash
 kubectl get pods -n istio-system
-istioctl verify-install
+# Check Istio installation
+istioctl version
+
+# Check the installed Istio control plane
+istioctl x precheck
+
+# Check the status of the Istio control plane
+kubectl get pods -n istio-system
+
+# Check Istio configuration/proxy status
+istioctl proxy-status
+
+# Validate Istio configuration
+istioctl analyze -A
 ```
 
 You should see `istiod`, `istio-ingressgateway`, and `istio-egressgateway` pods `Running`.
