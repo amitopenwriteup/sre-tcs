@@ -44,6 +44,9 @@ sudo kubeadm reset -f
 sudo rm -rf /etc/cni/net.d
 sudo iptables -F && sudo iptables -t nat -F && sudo iptables -t mangle -F && sudo iptables -X
 
+sudo systemctl stop firewalld
+sudo systemctl disable firewalld
+
 # Clean up kubeconfig
 rm -rf $HOME/.kube
 ```
@@ -67,7 +70,8 @@ sudo iptables -F && sudo iptables -t nat -F && sudo iptables -t mangle -F && sud
 
 # Remove old etcd data directory explicitly
 sudo rm -rf /var/lib/etcd
-
+sudo systemctl stop firewalld
+sudo systemctl disable firewalld
 # Clean up kubeconfig
 rm -rf $HOME/.kube
 ```
