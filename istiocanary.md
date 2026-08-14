@@ -105,8 +105,9 @@ For a live, empirical check, refresh `http://your node ip:9080/productpage` repe
 
 ```bash
 for i in $(seq 1 20); do
-  kubectl exec -n bookinfo "$(kubectl get pod -n bookinfo -l app=ratings -o jsonpath='{.items[0].metadata.name}')" \
-    -c ratings -- curl -s productpage:9080/productpage | grep -o "color=\"[a-z]*\"" | head -1
+  result=$(kubectl exec -n bookinfo "$(kubectl get pod -n bookinfo -l app=ratings -o jsonpath='{.items[0].metadata.name}')" \
+    -c ratings -- curl -s productpage:9080/productpage | grep -o "color=\"[a-z]*\"" | head -1)
+  echo "${result:-v1 (no color)}"
 done | sort | uniq -c
 ```
 
