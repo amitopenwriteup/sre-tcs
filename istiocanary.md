@@ -98,8 +98,10 @@ istioctl proxy-config route <productpage-pod-name> -n bookinfo --name 9080 -o js
 ```
 
 Look for the `reviews` cluster's weighted clusters (`v1: 90`, `v3: 10`) in the output.
-
-For a live, empirical check, refresh `http://localhost:9080/productpage` repeatedly (or loop curl) and count how often each version's review styling appears — over ~20 refreshes it should trend roughly 9:1 toward `v1`.
+```bash
+kubectl edit svc  -n bookinfo
+#third last line convert type: NodePort
+For a live, empirical check, refresh `http://your node ip:9080/productpage` repeatedly (or loop curl) and count how often each version's review styling appears — over ~20 refreshes it should trend roughly 9:1 toward `v1`.
 
 ```bash
 for i in $(seq 1 20); do
