@@ -25,19 +25,13 @@
 
 ## Reset the Cluster
 
-### Step 1: Drain and Remove Worker Nodes
 
-```bash
-# From the management machine, for each worker node:
-kubectl drain <worker-node> --ignore-daemonsets --delete-emptydir-data --force
-kubectl delete node <worker-node>
-```
 
 ### Step 2: Reset Each Worker Node
 
 ```bash
 # SSH to each worker node
-ssh user@<worker-node-ip>
+
 sudo su -
 
 # Stop kubelet
@@ -58,7 +52,7 @@ rm -rf $HOME/.kube
 
 ```bash
 # SSH to control plane node
-ssh user@<control-plane-ip>
+
 sudo su -
 
 # Stop kubelet
@@ -214,134 +208,3 @@ kubectl get pods -n kube-flannel -o wide
 kubectl logs -n kube-flannel -l app=flannel --tail=20
 ```
 
-### 4. Pod Communication Test
-```bash
-kubectl run test-pod-1 --image=alpine --restart=Never -- sleep 3600
-kubectl run test-pod-2 --image=alpine --restart=Never -- sleep 3600
-
-POD1_IP=$(kubectl get pod test-pod-1 -o jsonpath='{.status.podIP}')
-POD2_IP=$(kubectl get pod test-pod-2 -o jsonpath='{.status.podIP}')
-
-kubectl exec test-pod-1 -- ping -c 3 $POD2_IP
-kubectl exec test-pod-2 -- ping -c 3 $POD1_IP
-
-kubectl delete pod test-pod-1 test-pod-2
-```
-
-### 5. DNS Test
-```bash
-kubectl run -it --rm debug --image=alpine --restart=Never -- nslookup kubernetes.default
-```
-
----
-
-## Troubleshooting
-
-### Issue 1: kubeadm init Fails
-```bash
-# Check for leftover state from the reset
-sudo kubeadm reset -f
-sudo rm -rf /etc/cni/net.d /var/lib/etcd $HOME/.kube
-
-# Retry init
-sudo kubeadm init --kubernetes-version=v1.35.6 --pod-network-cidr=10.244.0.0/16 --upload-certs
-```
-
-### Issue 2: Worker Node Won't Join
-```bash
-# Confirm worker was fully reset
-sudo kubeadm reset -f
-sudo rm -rf /etc/cni/net.d $HOME/.kube
-
-# Generate a fresh join command from the control plane
-kubeadm token create --print-join-command
-
-# Retry join on the worker
-```
-
-### Issue 3: kubelet Won't Start
-```bash
-sudo journalctl -u kubelet -n 50
-
-# Check cgroup driver matches containerd config
-sudo kubeadm config view
-cat /etc/containerd/config.toml | grep -i cgroup
-
-sudo systemctl restart kubelet
-```
-
-### Issue 4: Flannel Pods CrashLoop
-```bash
-kubectl logs -n kube-flannel -l app=flannel --tail=50
-
-# Confirm pod-network-cidr matches Flannel's expected 10.244.0.0/16
-kubectl get cm kube-flannel-cfg -n kube-flannel -o jsonpath='{.data.net-conf\.json}' | jq .
-
-kubectl rollout restart daemonset/kube-flannel-ds -n kube-flannel
-```
-
-### Issue 5: Node Stuck NotReady
-```bash
-ssh user@<node-ip>
-df -h
-free -h
-sudo systemctl restart kubelet
-sudo journalctl -u kubelet -n 100
-```
-
----
-
-## Post-Install Checklist
-
-- [ ] All nodes show "Ready"
-- [ ] All control plane pods Running
-- [ ] Flannel pods Running, no error logs
-- [ ] DNS resolves inside cluster
-- [ ] Pod-to-pod communication works across nodes
-- [ ] Certificates valid (`kubeadm certs check-expiration`)
-
----
-
-## Quick Reference Commands
-
-```bash
-# Reset a node
-sudo kubeadm reset -f
-
-# Install exact version
-sudo dnf install kubeadm-1.35.6 kubelet-1.35.6 kubectl-1.35.6 -y
-
-# Init control plane
-sudo kubeadm init --kubernetes-version=v1.35.6 --pod-network-cidr=10.244.0.0/16 --upload-certs
-
-# Get a fresh join command
-kubeadm token create --print-join-command
-
-# Check versions
-kubeadm version -o short
-kubelet --version
-kubectl version --short
-
-# Check node status
-kubectl get nodes -o wide
-
-# Check Flannel
-kubectl get pods -n kube-flannel
-kubectl logs -n kube-flannel -l app=flannel -f
-```
-
----
-
-## Support & Documentation
-
-- [kubeadm reset Reference](https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm-reset/)
-- [kubeadm init Reference](https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm-init/)
-- [Flannel Documentation](https://github.com/flannel-io/flannel)
-- [Kubernetes Release Notes](https://github.com/kubernetes/kubernetes/releases)
-
----
-
-**Last Updated**: August 2026
-**Kubernetes Version**: 1.35.6
-**Flannel Backend**: VXLAN (default)
-**Method**: kubeadm reset + fresh install
