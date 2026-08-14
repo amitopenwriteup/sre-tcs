@@ -1,13 +1,14 @@
 # Kubernetes Upgrade Workshop: v1.30 → v1.35.6
 ## Complete Step-by-Step Guide using kubeadm on Rocky Linux 9 with Flannel
 
+> **Note:** This guide performs a single, direct upgrade from v1.30.14 to v1.35.6. There is no multi-hop version path — kubeadm, kubelet, and kubectl are upgraded straight to 1.35.6 in one maintenance window.
+
 ### Current Cluster Status
 - **Current Version**: v1.30.14
 - **Target Version**: v1.35.6
-- **Upgrade Method**: kubeadm (incremental)
+- **Upgrade Method**: kubeadm (direct)
 - **Networking**: Flannel (VXLAN backend)
 - **Operating System**: Rocky Linux 9
-- **Total Upgrade Cycles**: 5 minor version increments
 
 ---
 
@@ -25,15 +26,6 @@
 
 ## Version Compatibility & Repository Setup
 
-### ⚠️ IMPORTANT: Kubernetes Version Constraints
-
-**Kubernetes only allows upgrading across 1 minor version at a time.**
-
-```
-Example: 1.30 → 1.31 → 1.32 → 1.33 → 1.34 → 1.35
-Cannot skip: 1.30 → 1.35 (NOT ALLOWED - will fail)
-```
-
 ### Step 1: Check Current Kubernetes Version
 
 ```bash
@@ -48,24 +40,17 @@ kubectl version --short
 # Client Version: v1.30.14
 ```
 
-### Step 2: Identify Your Current Version
-
-If you're at **1.30.x**, your upgrade path is:
-```
-1.30.14 → 1.31.x → 1.32.x → 1.33.x → 1.34.x → 1.35.6
-```
-
-### Step 3: Check Available Versions in Repos
+### Step 2: Check Available Versions in Repos
 
 ```bash
 # List all available kubeadm versions
 sudo dnf list kubeadm --available --showduplicates 2>/dev/null | tail -20
 
 # Or search for specific versions
-sudo dnf search kubeadm | grep -i "1.3"
+sudo dnf search kubeadm | grep -i "1.35"
 ```
 
-### Step 4: Add Official Kubernetes Repository (If Needed)
+### Step 3: Add Official Kubernetes Repository (If Needed)
 
 Rocky Linux repos may not have the latest versions. Add the official Kubernetes repository:
 
@@ -87,7 +72,7 @@ sudo dnf makecache
 sudo dnf repolist | grep kubernetes
 ```
 
-### Step 5: Verify Available Package Versions
+### Step 4: Verify Available Package Versions
 
 ```bash
 # After adding repo, check available versions
@@ -95,45 +80,22 @@ sudo dnf list kubeadm --available --showduplicates | grep kubeadm
 
 # Should now show:
 # kubeadm.x86_64    1.30.14-0    @baseos
-# kubeadm.x86_64    1.31.x-0     kubernetes
-# kubeadm.x86_64    1.32.x-0     kubernetes
-# ... up to 1.35.6
+# kubeadm.x86_64    1.35.6-0     kubernetes
 ```
 
-### Step 6: Plan Your Upgrade Strategy
-
-**If upgrading from v1.30.14 to v1.35.6:**
-
-This workshop will focus on **v1.30 → v1.31** first, as an example upgrade cycle.
-
-Repeat the same process for each minor version upgrade:
-
-```
-Week 1: 1.30.14 → 1.31.x (follow this guide)
-Week 2: 1.31.x → 1.32.x (repeat guide with version numbers)
-Week 3: 1.32.x → 1.33.x (repeat guide with version numbers)
-Week 4: 1.33.x → 1.34.x (repeat guide with version numbers)
-Week 5: 1.34.x → 1.35.6 (repeat guide with version numbers)
-```
-
-**Total upgrade timeline: 4-5 weeks (one minor version per week)**
-
-### Step 7: Upgrade kubeadm, kubelet, and kubectl to Next Minor Version
+### Step 5: Upgrade kubeadm, kubelet, and kubectl to v1.35.6
 
 ⚠️ **IMPORTANT**: Always upgrade all three packages (kubeadm, kubelet, kubectl) to the SAME version
 
 ```bash
-# Find the next available minor version
-# Example: upgrading from 1.30.14 to 1.31.x
-
 # Check what's available
-sudo dnf list kubeadm-1.31.* --available
+sudo dnf list kubeadm-1.35.* --available
 
-# Option A: Upgrade to the latest 1.31.x (RECOMMENDED)
-sudo dnf upgrade kubeadm-1.31.* kubelet-1.31.* kubectl-1.31.* -y
+# Option A: Upgrade to the latest 1.35.x (RECOMMENDED)
+sudo dnf upgrade kubeadm-1.35.* kubelet-1.35.* kubectl-1.35.* -y
 
 # Option B: Upgrade to specific version (for consistency)
-sudo dnf upgrade kubeadm-1.31.5 kubelet-1.31.5 kubectl-1.31.5 -y
+sudo dnf upgrade kubeadm-1.35.6 kubelet-1.35.6 kubectl-1.35.6 -y
 
 # Verify ALL three packages are upgraded to same version
 kubeadm version
@@ -141,22 +103,22 @@ kubelet --version
 kubectl version --short
 
 # Example output (all should match):
-# kubeadm version: v1.31.5
-# Kubelet v1.31.5
-# Client Version: v1.31.5
+# kubeadm version: v1.35.6
+# Kubelet v1.35.6
+# Client Version: v1.35.6
 ```
 
 ### Important: Version Parity
 
 ```bash
 # MUST HAVE: All three versions matching
-✓ kubeadm v1.31.5
-✓ kubelet v1.31.5
-✓ kubectl v1.31.5
+✓ kubeadm v1.35.6
+✓ kubelet v1.35.6
+✓ kubectl v1.35.6
 
 # DO NOT ALLOW: Version mismatches
-✗ kubeadm v1.31.5 + kubelet v1.30.14 (WILL FAIL)
-✗ kubectl v1.31.0 + kubelet v1.31.5 (MAY FAIL)
+✗ kubeadm v1.35.6 + kubelet v1.30.14 (WILL FAIL)
+✗ kubectl v1.35.0 + kubelet v1.35.6 (MAY FAIL)
 
 # Verify version parity
 echo "=== Version Check ===" && \
@@ -169,11 +131,11 @@ echo "kubectl: $(kubectl version --short 2>/dev/null | grep -i client)"
 
 ```bash
 # Force install exact matching versions
-sudo dnf reinstall kubeadm-1.31.5 kubelet-1.31.5 kubectl-1.31.5 -y
+sudo dnf reinstall kubeadm-1.35.6 kubelet-1.35.6 kubectl-1.35.6 -y
 
 # Or clean and reinstall
 sudo dnf remove kubeadm kubelet kubectl -y
-sudo dnf install kubeadm-1.31.5 kubelet-1.31.5 kubectl-1.31.5 -y
+sudo dnf install kubeadm-1.35.6 kubelet-1.35.6 kubectl-1.35.6 -y
 
 # Verify again
 kubeadm version
@@ -254,18 +216,7 @@ sudo dnf list kubeadm --available | grep 1.35
 # Should show versions like: kubeadm.x86_64    1.35.6-0
 ```
 
-### 4. Review Upgrade Path
-```
-v1.30.14 → v1.31.x → v1.32.x → v1.33.x → v1.34.x → v1.35.6
-
-Note: MUST upgrade sequentially through each minor version
-      Cannot skip minor versions (e.g., 1.30 → 1.35 will FAIL)
-      
-This guide covers ONE upgrade cycle (e.g., 1.30 → 1.31)
-Repeat the same steps for each subsequent version
-```
-
-### 5. Pre-flight Checks
+### 4. Pre-flight Checks
 ```bash
 # Verify all nodes are Ready
 kubectl get nodes
@@ -378,12 +329,11 @@ sudo systemctl status kubelet
 # Update DNF cache
 sudo dnf update -y
 
-# Upgrade all three components to same version
-# Example: upgrading to v1.31.5
-sudo dnf upgrade kubeadm-1.31.5 kubelet-1.31.5 kubectl-1.31.5 -y
+# Upgrade all three components directly to v1.35.6
+sudo dnf upgrade kubeadm-1.35.6 kubelet-1.35.6 kubectl-1.35.6 -y
 
-# Or upgrade to latest in current minor version
-sudo dnf upgrade kubeadm-1.31.* kubelet-1.31.* kubectl-1.31.* -y
+# Or upgrade to latest in the 1.35 line
+sudo dnf upgrade kubeadm-1.35.* kubelet-1.35.* kubectl-1.35.* -y
 
 # Verify ALL three are now at same version
 echo "=== Verifying Version Parity ===" && \
@@ -391,7 +341,7 @@ kubeadm version -o short && \
 kubelet --version && \
 kubectl version --short 2>/dev/null | grep Client
 
-# All three should show same version (e.g., v1.31.5)
+# All three should show v1.35.6
 ```
 
 ### Step 5: Plan Upgrade
@@ -401,7 +351,7 @@ sudo kubeadm upgrade plan
 
 # Output will show:
 # - Current version
-# - Available versions
+# - Target version
 # - Required upgrades
 ```
 
@@ -425,10 +375,9 @@ echo "kubeadm: $(kubeadm version -o short)" && \
 echo "kubelet: $(kubelet --version | awk '{print $2}')" && \
 echo "kubectl: $(kubectl version --short 2>/dev/null | grep Client | awk '{print $3}')"
 
-# All should show same version
+# All should show v1.35.6
 # If NOT matching, reinstall:
-DESIRED_VERSION="1.31.5"  # Change to your target version
-sudo dnf reinstall kubeadm-${DESIRED_VERSION} kubelet-${DESIRED_VERSION} kubectl-${DESIRED_VERSION} -y
+sudo dnf reinstall kubeadm-1.35.6 kubelet-1.35.6 kubectl-1.35.6 -y
 ```
 
 ### Step 8: Restart kubelet
@@ -532,12 +481,11 @@ sudo systemctl status kubelet
 # Update DNF cache
 sudo dnf update -y
 
-# Upgrade all three to SAME version
-# Example: upgrading to v1.31.5
-sudo dnf upgrade kubeadm-1.31.5 kubelet-1.31.5 kubectl-1.31.5 -y
+# Upgrade all three directly to v1.35.6
+sudo dnf upgrade kubeadm-1.35.6 kubelet-1.35.6 kubectl-1.35.6 -y
 
-# Or upgrade to latest in minor version
-sudo dnf upgrade kubeadm-1.31.* kubelet-1.31.* kubectl-1.31.* -y
+# Or upgrade to latest in the 1.35 line
+sudo dnf upgrade kubeadm-1.35.* kubelet-1.35.* kubectl-1.35.* -y
 
 # Verify all three are now at same version
 echo "=== Verifying Version Parity ===" && \
@@ -565,8 +513,7 @@ echo "kubelet: $(kubelet --version | awk '{print $2}')" && \
 echo "kubectl: $(kubectl version --short 2>/dev/null | grep Client | awk '{print $3}')"
 
 # If mismatch, reinstall:
-DESIRED_VERSION="1.31.5"  # Change to your target version
-sudo dnf reinstall kubeadm-${DESIRED_VERSION} kubelet-${DESIRED_VERSION} kubectl-${DESIRED_VERSION} -y
+sudo dnf reinstall kubeadm-1.35.6 kubelet-1.35.6 kubectl-1.35.6 -y
 ```
 
 #### Step 9: Restart kubelet
@@ -834,15 +781,14 @@ kubelet --version && \
 kubectl version --short 2>/dev/null | grep Client
 
 # Example of WRONG output (versions don't match):
-# v1.31.5
+# v1.35.6
 # Kubelet v1.30.14    ← MISMATCH!
-# Client Version: v1.31.5    ← MISMATCH!
+# Client Version: v1.35.6    ← MISMATCH!
 
 # Fix: Reinstall all three to same version
-TARGET_VERSION="1.31.5"
 sudo systemctl stop kubelet
 sudo dnf remove kubeadm kubelet kubectl -y
-sudo dnf install kubeadm-${TARGET_VERSION} kubelet-${TARGET_VERSION} kubectl-${TARGET_VERSION} -y
+sudo dnf install kubeadm-1.35.6 kubelet-1.35.6 kubectl-1.35.6 -y
 
 # Verify parity
 kubeadm version -o short
@@ -875,14 +821,14 @@ kubectl patch cm kube-flannel-cfg -n kube-flannel --type merge -p '{"data":{"net
 
 ### ⚠️ Only if Cluster is Unstable
 
-### Full Rollback to v1.3 (Last Resort)
+### Full Rollback to v1.30 (Last Resort)
 
 ```bash
 # 1. Stop all services
 kubectl scale deployment --all --replicas=0 -A
 
 # 2. On each node, downgrade packages
-sudo dnf downgrade kubeadm-1.3.* kubelet-1.3.* kubectl-1.3.* -y
+sudo dnf downgrade kubeadm-1.30.* kubelet-1.30.* kubectl-1.30.* -y
 
 # 3. Restore kubeadm config
 sudo cp /backup/admin.conf /etc/kubernetes/admin.conf
@@ -963,7 +909,7 @@ echo "kubelet: $(kubelet --version | awk '{print $2}')" && \
 echo "kubectl: $(kubectl version --short 2>/dev/null | grep Client | awk '{print $3}')"
 
 # If versions don't match, reinstall all three together
-sudo dnf reinstall kubeadm-1.31.5 kubelet-1.31.5 kubectl-1.31.5 -y
+sudo dnf reinstall kubeadm-1.35.6 kubelet-1.35.6 kubectl-1.35.6 -y
 
 # Check node versions
 kubectl get nodes -o custom-columns=NAME:.metadata.name,VERSION:.status.nodeInfo.kubeletVersion
@@ -1002,18 +948,11 @@ kubectl logs -n kube-flannel -l app=flannel -f
 
 ## Notes for v1.30 → v1.35 Upgrade
 
-### Major Changes Between Versions:
-- **v1.31**: Enhanced storage drivers, improved scheduler
-- **v1.32**: Pod security updates, new metrics
-- **v1.33**: Deprecated APIs removed from v1.26+
-- **v1.34**: Networking improvements, new admission controllers
-- **v1.35**: Latest stable, performance optimizations
-
 ### Minor Changes to Expect:
-- **API evolutions**: Gradual deprecations (check release notes for each version)
+- **API evolutions**: Gradual deprecations (check release notes)
 - **CRI updates**: Container runtime interface enhancements
 - **Network policies**: Improved egress rules
-- **Metrics**: New prometheus metrics added in some versions
+- **Metrics**: New prometheus metrics added
 - **Storage**: Incremental improvements
 
 ### Resource Requirements:
@@ -1027,88 +966,6 @@ kubectl logs -n kube-flannel -l app=flannel -f
 3. Monitor metrics and logs
 4. Validate storage and networking
 5. Only then upgrade production
-
----
-
-## Repeating the Upgrade for Subsequent Versions
-
-### After Completing v1.30 → v1.31
-
-Once you've successfully upgraded to v1.31.x and verified cluster health (24+ hours):
-
-```bash
-# 1. Wait 1-2 weeks before next upgrade
-# 2. Follow EXACT same steps in this guide
-# 3. But change version numbers:
-
-# Old (v1.30 → v1.31):
-sudo dnf upgrade kubeadm-1.31.* kubelet-1.31.* kubectl-1.31.* -y
-
-# New (v1.31 → v1.32):
-sudo dnf upgrade kubeadm-1.32.* kubelet-1.32.* kubectl-1.32.* -y
-
-# Verify
-kubeadm version  # Should show v1.32.x
-```
-
-### Upgrade Cycle Timeline
-
-| Week | Upgrade | Duration | Testing |
-|------|---------|----------|---------|
-| 1 | 1.30 → 1.31 | 3-4 hours | 24 hours |
-| 2-3 | Testing & Stability | - | - |
-| 4 | 1.31 → 1.32 | 3-4 hours | 24 hours |
-| 5-6 | Testing & Stability | - | - |
-| 7 | 1.32 → 1.33 | 3-4 hours | 24 hours |
-| 8-9 | Testing & Stability | - | - |
-| 10 | 1.33 → 1.34 | 3-4 hours | 24 hours |
-| 11-12 | Testing & Stability | - | - |
-| 13 | 1.34 → 1.35 | 3-4 hours | 24 hours |
-| 14+ | Final Verification | - | Ongoing |
-
-**Total Timeline**: 14+ weeks (3.5 months)
-
-### Key Points for Each Upgrade Cycle
-
-```bash
-# For EACH cycle (1.30→1.31, 1.31→1.32, etc.):
-
-# 1. Update documentation with new version
-# 2. Back up etcd
-sudo cp -r /var/lib/etcd /backup/etcd-backup-v1.XX
-
-# 3. Follow the exact same procedure from this guide
-# 4. Change only the version numbers
-
-# 5. Verify EACH time
-kubeadm version
-kubectl get nodes
-kubectl get pods -A --no-headers | grep -v Running | grep -v Completed
-
-# 6. Monitor for 24 hours
-# 7. Only then proceed to next version
-```
-
-### Checklist for Each Version Upgrade
-
-- [ ] Backup etcd with new version number
-- [ ] Backup admin.conf
-- [ ] Drain control plane
-- [ ] Upgrade kubeadm on control plane
-- [ ] Run `kubeadm upgrade plan`
-- [ ] Run `kubeadm upgrade apply vX.XX.X`
-- [ ] Upgrade kubelet and kubectl on control plane
-- [ ] Restart kubelet
-- [ ] Uncordon control plane
-- [ ] Wait 5 minutes for stability
-- [ ] Drain first worker node
-- [ ] Upgrade worker node
-- [ ] Uncordon worker node
-- [ ] Wait for pods to reschedule (2-3 min)
-- [ ] Repeat for each worker node
-- [ ] Run full verification suite
-- [ ] Monitor metrics for 24 hours
-- [ ] Document completion in upgrade log
 
 ---
 
