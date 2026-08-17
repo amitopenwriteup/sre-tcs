@@ -67,7 +67,7 @@ RATINGS_POD=$(kubectl get pod -n bookinfo -l app=ratings -o jsonpath='{.items[0]
 
 for i in $(seq 1 10); do
   kubectl exec -n bookinfo "$RATINGS_POD" -c ratings -- \
-    curl -s -H "end-user: jason" reviews:9080/reviews/1 | grep -o "\"color\":\"[a-z]*\""
+    curl -s -H "end-user: jason" reviews:9080/reviews/1 | grep -oE "\"color\": ?\"[a-z]*\""
 done | sort | uniq -c
 ```
 
