@@ -67,7 +67,7 @@ RATINGS_POD=$(kubectl get pod -n bookinfo -l app=ratings -o jsonpath='{.items[0]
 for i in $(seq 1 10); do
   kubectl exec -n bookinfo "$RATINGS_POD" -c ratings -- \
     curl -s -H "Cookie: session_id=abc123; canary=true" reviews:9080/reviews/1 \
-    | grep -o "\"color\":\"[a-z]*\""
+    | grep -oE "\"color\": ?\"[a-z]*\"" | head -1
 done | sort | uniq -c
 
 # No canary cookie -> falls through to the weighted rule
