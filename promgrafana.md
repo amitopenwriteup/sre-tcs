@@ -476,7 +476,6 @@ Deploy Loki using Helm:
 
 ```bash
 helm install loki grafana/loki \
-  --namespace loki \
   --values loki-values.yaml \
   --version 6.29.0
 ```
@@ -623,17 +622,7 @@ kubectl describe pv storage-loki-0
 kubectl get pvc -n loki
 ```
 
-If storage class doesn't exist, create it:
-```bash
-kubectl apply -f - <<'EOF'
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
-metadata:
-  name: manual
-provisioner: kubernetes.io/no-provisioner
-volumeBindingMode: WaitForFirstConsumer
-EOF
-```
+
 
 If PV is not bound, reapply it:
 ```bash
@@ -647,7 +636,7 @@ kubectl apply -f pv-loki.yaml
 
 **Solution:** Check pod logs:
 ```bash
-kubectl logs -n loki -f svc/loki
+kubectl logs -f svc/loki
 ```
 
 ---
