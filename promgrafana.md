@@ -427,11 +427,8 @@ spec:
     - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
   storageClassName: manual
-  claimRef:
-    namespace: loki
-    name: storage-loki-0
   hostPath:
-    path: "/mnt/data/loki"
+    path: "/mnt/data4/loki"
     type: DirectoryOrCreate
 EOF
 ```
@@ -464,15 +461,15 @@ SSH into your worker node and set up the storage directory:
 ssh <worker-node-ip>
 
 # Clean installation
-sudo rm -rf /mnt/data/loki
-sudo mkdir -p /mnt/data/loki
+sudo rm -rf /mnt/data4/loki
+sudo mkdir -p /mnt/data4/loki
 
 # Set ownership and permissions (match securityContext in values)
-sudo chown -R 10001:10001 /mnt/data/loki
-sudo chmod -R 0700 /mnt/data/loki
+sudo chown -R 10001:10001 /mnt/data4/loki
+sudo chmod -R 0700 /mnt/data4/loki
 
 # Verify
-ls -la /mnt/data/loki
+ls -la /mnt/data4/loki
 
 # Exit SSH
 exit
