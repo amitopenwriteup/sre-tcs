@@ -467,8 +467,6 @@ Add Grafana Helm repository and create namespace:
 helm repo add grafana https://grafana.github.io/helm-charts
 helm repo update
 
-# Create namespace for Loki
-kubectl create namespace loki
 
 # Apply the PersistentVolume
 kubectl apply -f pv-loki.yaml
