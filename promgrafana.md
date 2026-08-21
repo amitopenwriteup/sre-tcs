@@ -433,25 +433,8 @@ spec:
 EOF
 ```
 
-### 7.3 Step 2: Prepare Storage on Worker Node
 
-Before deploying, ensure your cluster has the "manual" storage class. Check if it exists:
 
-```bash
-kubectl get storageclass manual
-```
-
-If it doesn't exist, create it:
-
-```bash
-kubectl apply -f - <<'EOF'
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
-metadata:
-  name: manual
-provisioner: kubernetes.io/no-provisioner
-volumeBindingMode: WaitForFirstConsumer
-EOF
 ```
 
 SSH into your worker node and set up the storage directory:
